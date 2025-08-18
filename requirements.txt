@@ -1,0 +1,16 @@
+# --- UI ---
+PyQt5>=5.15
+qt-material>=2.14
+
+# --- Computer Vision / DL ---
+ultralytics>=8.2.0
+opencv-python>=4.9.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# --- Data export ---
+pandas>=2.2.0
+openpyxl>=3.1.0
+
+# --- Доп. инструменты ---
+matplotlib>=3.8.0     # для отладки и визуализаций
