@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sys
 from pathlib import Path
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import QMainWindow, QSplitter
 # НЕ импортируем torch/ultralytics нигде здесь
 
@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
         self.left.sig_open.connect(self._dialog_open)
         self.left.sig_process.connect(self._process)
         self.right.sig_file_selected.connect(self._open)
+        self.right.sig_file_closed.connect(self._on_file_closed)
         self.ctrl.sig_overlay_ready.connect(self._show_overlay)
         self.ctrl.sig_status.connect(self.statusBar().showMessage)
 
@@ -81,6 +82,7 @@ class MainWindow(QMainWindow):
     def _open(self, path: Path):
         self.viewer.load_image(path)
         self._current_path = str(path)
+        self.right.add_file(path)
         self.statusBar().showMessage(f"Открыт файл: {path}")
 
     def _process(self):
@@ -93,6 +95,12 @@ class MainWindow(QMainWindow):
         from PyQt5.QtGui import QPixmap
         self.viewer.set_pixmap(QPixmap(overlay_path))
 
+    def _on_file_closed(self, path: Path):
+        if self._current_path == str(path):
+            self.viewer.clear()
+            self._current_path = ''
+            self.statusBar().showMessage("Файл закрыт")
+
 
 def main():
     # включаем отладочное логирование и обработчик аварий
@@ -100,6 +108,21 @@ def main():
     logging.debug("GUI starting; log file: %s", log_file)
 
     app = QtWidgets.QApplication(sys.argv)
+    app.setStyle("Fusion")
+    palette = QtGui.QPalette()
+    palette.setColor(QtGui.QPalette.Window, QtGui.QColor(53, 53, 53))
+    palette.setColor(QtGui.QPalette.WindowText, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.Base, QtGui.QColor(25, 25, 25))
+    palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor(53, 53, 53))
+    palette.setColor(QtGui.QPalette.ToolTipBase, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.ToolTipText, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.Text, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.Button, QtGui.QColor(53, 53, 53))
+    palette.setColor(QtGui.QPalette.ButtonText, QtCore.Qt.white)
+    palette.setColor(QtGui.QPalette.BrightText, QtCore.Qt.red)
+    palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor(142, 45, 197).lighter())
+    palette.setColor(QtGui.QPalette.HighlightedText, QtCore.Qt.black)
+    app.setPalette(palette)
 
     # ВАЖНО: временно без qt-material (может быть причиной падения)
     # try:

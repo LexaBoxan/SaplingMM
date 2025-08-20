@@ -61,6 +61,11 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.resetTransform()
         self.fitInView(self._pixmap_item, QtCore.Qt.KeepAspectRatio)
 
+    def clear(self):
+        """Очистить сцену от изображения."""
+        self._scene.clear()
+        self._pixmap_item = None
+
     # колесо мыши — зум
     def wheelEvent(self, event: QtGui.QWheelEvent):
         if event.angleDelta().y() == 0:
