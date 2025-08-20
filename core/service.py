@@ -19,6 +19,26 @@ class CoreService:
         self.det1 = SeedlingDetector(det1_path, conf=conf, imgsz=imgsz_seedling, device=device)
         self.det2 = PartsDetector(det2_path, conf=conf, iou=iou, imgsz=imgsz_parts, device=device)
 
+    def detect(self, image_path: Path) -> dict:
+        img = cv2.imread(str(image_path))
+        if img is None:
+            raise RuntimeError(f"Не удалось загрузить изображение: {image_path}")
+        out_dir = results_dir_for(image_path)
+        boxes = self.det1.predict(img)
+        overlay = img.copy()
+        det_list = []
+        for sid, (x, y, w, h, score) in enumerate(boxes, start=1):
+            draw_bbox(overlay, (x, y, w, h), COLORS['seedling'], f"seedling#{sid} {score:.2f}")
+            det_list.append({'id': sid, 'bbox': [x, y, w, h], 'score': float(score)})
+        cv2.imwrite(str(out_dir/"det1_overlay.jpg"), overlay)
+        save_json({'image': image_path.name, 'detections': det_list}, out_dir/"det1.json")
+        return {
+            'out_dir': out_dir,
+            'overlay_path': out_dir/"det1_overlay.jpg",
+            'json_path': out_dir/"det1.json",
+            'stats': {'seedlings': len(det_list)}
+        }
+
     def process(self, image_path: Path, export_excel: bool = True) -> dict:
         img = cv2.imread(str(image_path))
         if img is None:

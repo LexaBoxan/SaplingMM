@@ -8,11 +8,13 @@ class LeftToolPanel(QtWidgets.QWidget):
     Сигналы:
       - sig_open: открыть файл
       - sig_calibrate: начать калибровку
-      - sig_process: запустить обработку
+      - sig_detect: выполнить только детекцию
+      - sig_process: запустить полный пайплайн
       - sig_save_overlay: сохранить overlay (опц.)
     """
     sig_open = QtCore.pyqtSignal()
     sig_calibrate = QtCore.pyqtSignal()
+    sig_detect = QtCore.pyqtSignal()
     sig_process = QtCore.pyqtSignal()
     sig_save_overlay = QtCore.pyqtSignal()
 
@@ -25,9 +27,14 @@ class LeftToolPanel(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
 
         self.btn_open = QtWidgets.QPushButton("Открыть изображение")
+        self.btn_open.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DialogOpenButton))
         self.btn_calibrate = QtWidgets.QPushButton("Калибровка (2 клика)")
+        self.btn_detect = QtWidgets.QPushButton("Detect")
+        self.btn_detect.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_ComputerIcon))
         self.btn_process = QtWidgets.QPushButton("Обработать")
+        self.btn_process.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_MediaPlay))
         self.btn_save = QtWidgets.QPushButton("Сохранить overlay")
+        self.btn_save.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_DialogSaveButton))
 
         # примеры доп. настроек
         self.step_label = QtWidgets.QLabel("Шаг сетки (мм):")
@@ -54,6 +61,8 @@ class LeftToolPanel(QtWidgets.QWidget):
         layout.addWidget(self.step_mm)
         layout.addWidget(self.btn_calibrate)
         layout.addSpacing(8)
+        layout.addWidget(self.btn_detect)
+        layout.addSpacing(8)
         layout.addWidget(self.conf_label)
         layout.addWidget(self.conf_spin)
         layout.addWidget(self.iou_label)
@@ -67,6 +76,7 @@ class LeftToolPanel(QtWidgets.QWidget):
         # сигнализация
         self.btn_open.clicked.connect(self.sig_open)
         self.btn_calibrate.clicked.connect(self.sig_calibrate)
+        self.btn_detect.clicked.connect(self.sig_detect)
         self.btn_process.clicked.connect(self.sig_process)
         self.btn_save.clicked.connect(self.sig_save_overlay)
 

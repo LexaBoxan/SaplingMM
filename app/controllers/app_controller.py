@@ -3,36 +3,38 @@ from pathlib import Path
 import logging
 from PyQt5 import QtCore
 
-class _ProcessTask(QtCore.QRunnable):
-    def __init__(self, det1_path: str, det2_path: str, image_path: str, done_sig: QtCore.pyqtSignal, status_sig: QtCore.pyqtSignal):
+class _WorkerTask(QtCore.QRunnable):
+    def __init__(self, det1_path: str, det2_path: str, image_path: str, op: str,
+                 done_sig: QtCore.pyqtSignal, status_sig: QtCore.pyqtSignal):
         super().__init__()
         self.det1_path = det1_path
         self.det2_path = det2_path
         self.image_path = image_path
         self.done_sig = done_sig
         self.status_sig = status_sig
+        self.op = op  # 'process' или 'detect'
 
     def run(self):
         try:
-            logging.debug("Processing started: %s", self.image_path)
-            # лениво импортируем только в рабочем потоке
-            from core.service import CoreService
-            svc = CoreService(self.det1_path, self.det2_path, device='cpu')  # CPU во избежание CUDA-конфликтов
-            res = svc.process(Path(self.image_path))
-            logging.debug(
-                "Processing finished: overlay=%s csv=%s",
-                res["overlay_path"],
-                res["csv_path"],
-            )
-            # вернуть результат в GUI-поток
+            logging.debug("%s started: %s", self.op, self.image_path)
+            from core.service import CoreService  # ленивый импорт
+            svc = CoreService(self.det1_path, self.det2_path, device='cpu')
+            if self.op == 'process':
+                res = svc.process(Path(self.image_path))
+            else:
+                res = svc.detect(Path(self.image_path))
+            logging.debug("%s finished: overlay=%s", self.op, res["overlay_path"])
             QtCore.QMetaObject.invokeMethod(
                 self.done_sig, "emit", QtCore.Qt.QueuedConnection, QtCore.Q_ARG(str, str(res["overlay_path"]))
             )
             QtCore.QMetaObject.invokeMethod(
-                self.status_sig, "emit", QtCore.Qt.QueuedConnection, QtCore.Q_ARG(str, f"Готово: {res['csv_path']}")
+                self.status_sig,
+                "emit",
+                QtCore.Qt.QueuedConnection,
+                QtCore.Q_ARG(str, "Готово" if self.op == 'process' else "Детект завершён"),
             )
         except Exception as e:
-            logging.exception("Processing failed")
+            logging.exception("%s failed", self.op)
             QtCore.QMetaObject.invokeMethod(
                 self.status_sig, "emit", QtCore.Qt.QueuedConnection, QtCore.Q_ARG(str, f"Ошибка: {e}")
             )
@@ -58,5 +60,12 @@ class AppController(QtCore.QObject):
     def process_image(self, image_path: str):
         logging.debug("Queue image for processing: %s", image_path)
         self.sig_status.emit("Обработка запущена…")
-        task = _ProcessTask(self.det1_path, self.det2_path, image_path, self.sig_overlay_ready, self.sig_status)
+        task = _WorkerTask(self.det1_path, self.det2_path, image_path, 'process', self.sig_overlay_ready, self.sig_status)
+        self.pool.start(task)
+
+    @QtCore.pyqtSlot(str)
+    def detect_image(self, image_path: str):
+        logging.debug("Queue image for detect: %s", image_path)
+        self.sig_status.emit("Детект запущен…")
+        task = _WorkerTask(self.det1_path, self.det2_path, image_path, 'detect', self.sig_overlay_ready, self.sig_status)
         self.pool.start(task)
