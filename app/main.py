@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sys
 from pathlib import Path
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QSplitter
 # НЕ импортируем torch/ultralytics нигде здесь
 
@@ -19,6 +19,8 @@ from app.controllers.app_controller import AppController
 
 
 class MainWindow(QMainWindow):
+    openDialogRequested = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Saplings GUI (Safe Boot)")
@@ -42,6 +44,8 @@ class MainWindow(QMainWindow):
 
         # wiring
         self._current_path = ''
+        self._dlg_opening = False
+        self.openDialogRequested.connect(self._dialog_open_impl)
         self.left.sig_open.connect(self._dialog_open)
         self.left.sig_process.connect(self._process)
         self.right.sig_file_selected.connect(self._open)
@@ -53,12 +57,22 @@ class MainWindow(QMainWindow):
         # self.viewer.sig_click.connect(self._on_view_click)
 
     def _dialog_open(self):
-        p, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Открыть', str(Path.home()),
-            'Images (*.png *.jpg *.jpeg *.tif *.tiff)'
-        )
-        if p:
-            self._open(Path(p))
+        if self._dlg_opening:
+            return
+        self._dlg_opening = True
+        self.openDialogRequested.emit()
+
+    @QtCore.pyqtSlot()
+    def _dialog_open_impl(self):
+        try:
+            p, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self, 'Открыть', str(Path.home()),
+                'Images (*.png *.jpg *.jpeg *.tif *.tiff)'
+            )
+            if p:
+                self._open(Path(p))
+        finally:
+            self._dlg_opening = False
 
     def _open(self, path: Path):
         self.viewer.load_image(path)

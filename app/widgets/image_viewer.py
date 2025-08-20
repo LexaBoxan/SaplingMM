@@ -1,5 +1,6 @@
 from __future__ import annotations
 from pathlib import Path
+import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
@@ -41,16 +42,22 @@ class ImageViewer(QtWidgets.QGraphicsView):
             h, w, ch = rgb.shape
             img = QtGui.QImage(rgb.data, w, h, ch * w, QtGui.QImage.Format_RGB888)
         pix = QtGui.QPixmap.fromImage(img)
+        if pix.isNull():
+            logging.error("Failed to load image: %s", path)
+            return
         self._scene.clear()
         self._pixmap_item = self._scene.addPixmap(pix)
-        self._scene.setSceneRect(pix.rect())
+        self._scene.setSceneRect(QtCore.QRectF(pix.rect()))
         self.resetTransform()
         self.fitInView(self._pixmap_item, QtCore.Qt.KeepAspectRatio)
 
     def set_pixmap(self, pixmap: QtGui.QPixmap):
+        if pixmap.isNull():
+            logging.error("Received null pixmap")
+            return
         self._scene.clear()
         self._pixmap_item = self._scene.addPixmap(pixmap)
-        self._scene.setSceneRect(pixmap.rect())
+        self._scene.setSceneRect(QtCore.QRectF(pixmap.rect()))
         self.resetTransform()
         self.fitInView(self._pixmap_item, QtCore.Qt.KeepAspectRatio)
 
