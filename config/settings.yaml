@@ -1,0 +1,21 @@
+models:
+  det1: models/seedling.pt
+  det2: models/parts.pt
+
+yolo:
+  conf: 0.25
+  iou: 0.45
+  imgsz_seedling: 1280
+  imgsz_parts: 640
+
+results_dir: results
+export:
+  excel: true
+
+visual:
+  colors:
+    seedling: [0, 180, 255]
+    stem: [255, 160, 0]
+    root: [180, 0, 255]
+    inflorescence: [0, 200, 0]
+  thickness: 2

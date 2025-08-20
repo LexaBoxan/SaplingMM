@@ -10,8 +10,8 @@ from app.debug_utils import setup_debug_logging
 import logging
 
 # UI-виджеты
-from app.widgets.image_viewer import ImageViewer
-from app.widgets.left_tool_panel import LeftToolPanel
+from app.widgets.viewer import ImageViewer
+from app.widgets.left_tools import LeftToolPanel
 from app.widgets.right_explorer import RightExplorer
 
 # Контроллер (лёгкий)
