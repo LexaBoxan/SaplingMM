@@ -1,7 +1,7 @@
 from __future__ import annotations
 import sys
 from pathlib import Path
-from PyQt5 import QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QSplitter
 # НЕ импортируем torch/ultralytics нигде здесь
 
@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
 
         # wiring
         self._current_path = ''
+        self._dlg_opening = False
         self.left.sig_open.connect(self._dialog_open)
         self.left.sig_process.connect(self._process)
         self.right.sig_file_selected.connect(self._open)
@@ -53,12 +54,29 @@ class MainWindow(QMainWindow):
         # self.viewer.sig_click.connect(self._on_view_click)
 
     def _dialog_open(self):
-        p, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Открыть', str(Path.home()),
-            'Images (*.png *.jpg *.jpeg *.tif *.tiff)'
+        if self._dlg_opening:
+            return
+        self._dlg_opening = True
+        QtCore.QMetaObject.invokeMethod(
+            self, "_dialog_open_impl", QtCore.Qt.QueuedConnection
         )
-        if p:
-            self._open(Path(p))
+
+    @QtCore.pyqtSlot()
+    def _dialog_open_impl(self):
+        try:
+            options = QtWidgets.QFileDialog.Options()
+            options |= QtWidgets.QFileDialog.DontUseNativeDialog
+            p, _ = QtWidgets.QFileDialog.getOpenFileName(
+                self,
+                'Открыть',
+                str(Path.home()),
+                'Images (*.png *.jpg *.jpeg *.tif *.tiff)',
+                options=options,
+            )
+            if p:
+                self._open(Path(p))
+        finally:
+            self._dlg_opening = False
 
     def _open(self, path: Path):
         self.viewer.load_image(path)
