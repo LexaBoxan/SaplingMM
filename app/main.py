@@ -5,6 +5,10 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMainWindow, QSplitter
 # НЕ импортируем torch/ultralytics нигде здесь
 
+# Вспомогательные отладочные инструменты
+from app.debug_utils import setup_debug_logging
+import logging
+
 # UI-виджеты
 from app.widgets.image_viewer import ImageViewer
 from app.widgets.left_tool_panel import LeftToolPanel
@@ -73,6 +77,10 @@ class MainWindow(QMainWindow):
 
 
 def main():
+    # включаем отладочное логирование и обработчик аварий
+    log_file = setup_debug_logging()
+    logging.debug("GUI starting; log file: %s", log_file)
+
     app = QtWidgets.QApplication(sys.argv)
 
     # ВАЖНО: временно без qt-material (может быть причиной падения)
